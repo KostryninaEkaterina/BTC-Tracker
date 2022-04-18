@@ -16,18 +16,34 @@ class Connection:
         if table_load == {}:
             print('Недостаточно данных. Выполняю запрос к API')
             table.save_in_table(btc.get_by_time_interval(start, end))
-        elif len(table_load) < (maya.parse(end).datetime().date()-maya.parse(start).datetime().date()).days:
-            print('Недостаточно данных. Выполняю запрос к API')
-            table_tmp = table.loading_from_a_table(start, end)
-            if start not in table_tmp:
-                table.save_in_table(btc.get_by_time_interval(start, min(table_tmp)))
-            if end_min_1_day not in table_tmp:
-                table.save_in_table(btc.get_by_time_interval(max(table_tmp), end))
-            if len(table_load) < (maya.parse(end).datetime().date()-maya.parse(start).datetime().date()).days:
-                self.load_min_requests(start, end)
-                return
+        else:
+            if start not in table_load:
+                table.save_in_table(btc.get_by_time_interval(start, min(table_load)))
+                table_load = table.loading_from_a_table(start, end)
+            if end_min_1_day not in table_load:
+                table.save_in_table(btc.get_by_time_interval(max(table_load), end))
+                table_load = table.loading_from_a_table(start, end)
+            if len(table_load) < end_min_1_day:
+                def minimazer():
+                    st = start
+                    tmp_start = []
+                    tmp_end = []
+                    while maya.parse(st).datetime() + timedelta(days=1) < maya.parse(end).datetime():
+                        if st in list(table_load) and str(maya.parse(st).datetime().date() + timedelta(days=1)) not in list(
+                                        table_load):
+                            tmp_start.append(str(maya.parse(st).datetime().date() + timedelta(days=1)))
+                        if st not in list(table_load) and str(maya.parse(st).datetime().date() + timedelta(days=1)) in list(
+                                        table_load):
+                            tmp_end.append(str(maya.parse(st).datetime().date() + timedelta(days=1)))
+                        st = str(maya.parse(st).datetime().date() + timedelta(days=1))
+                    print(tmp_start)
+                    print(tmp_end)
+                    if len(tmp_start) == len(tmp_end):
+                        for i in range(len(tmp_start)):
+                            table.save_in_table(btc.get_by_time_interval(tmp_start[i], tmp_end[i]))
+                minimazer()
         plot_data(table.loading_from_a_table(start, end))
-
+        
     def load_min_requests(self, start: date, end: date):
         btc = BtcApi(n)
         table = DataStorage()
